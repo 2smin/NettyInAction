@@ -1,5 +1,7 @@
 package BootStrap;
 
+import Decoder.LastInboundHandler;
+import Decoder.ToMessageDecoder;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -20,12 +22,12 @@ public class BootstrapManager {
 
         BootstrapManager bootstrapManager = new BootstrapManager();
 
-        bootstrapManager.runServerBootStrap(8080);
+        bootstrapManager.runServerBootStrap(33333);
 
-        bootstrapManager.runClientBootStrap(8080);
+        bootstrapManager.runClientBootStrap(33333);
     }
 
-    public void runClientBootStrap(int port) throws UnknownHostException, InterruptedException {
+    public ChannelFuture runClientBootStrap(int port) throws UnknownHostException, InterruptedException {
         Bootstrap client = new Bootstrap();
         client.channel(NioSocketChannel.class);
         client.group(new NioEventLoopGroup(1))
@@ -55,6 +57,7 @@ public class BootstrapManager {
         });
 
 
+        return future;
     }
     public void runServerBootStrap(int port) throws InterruptedException {
 
@@ -66,15 +69,9 @@ public class BootstrapManager {
                     @Override
                     protected void initChannel(Channel ch) throws Exception {
                         System.out.println("channel initializing");
-                        ch.pipeline().addLast(new SimpleChannelInboundHandler<ByteBuf>() {
-                            @Override
-                            protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
-                                System.out.println("read message");
-                                String readMEssage = (String) msg.readCharSequence(msg.readableBytes(), Charset.defaultCharset());
-                                System.out.println(readMEssage);
-                            }
-                        });
-
+//                        ch.pipeline().addLast(new ToMessageDecoder());
+//                        ch.pipeline().addLast(new LastInboundHandler());
+                        BootstrapContainer.getInstance().save(String.valueOf(port), ch);
                     }
                 });
 
@@ -89,7 +86,6 @@ public class BootstrapManager {
                 }
             }
         });
-
 
     }
 }
