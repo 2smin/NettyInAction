@@ -1,27 +1,19 @@
 package BootStrap;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
-public class BootstrapManager {
+public class ClinetBootStrapManager {
 
     public static void main(String[] args) throws Exception{
-
-        BootstrapManager bootstrapManager = new BootstrapManager();
-
-        bootstrapManager.runServerBootStrap(33333);
-
-        bootstrapManager.runClientBootStrap(33333);
     }
 
     public ChannelFuture runClientBootStrap(int port) throws UnknownHostException, InterruptedException {
@@ -54,35 +46,6 @@ public class BootstrapManager {
         });
 
 
-        return future;
-    }
-    public void runServerBootStrap(int port) throws InterruptedException {
-
-        ServerBootstrap server = new ServerBootstrap();
-
-        server.group(new NioEventLoopGroup(1))
-                .channel(NioServerSocketChannel.class)
-                .childHandler(new ChannelInitializer() {
-                    @Override
-                    protected void initChannel(Channel ch) throws Exception {
-                        System.out.println("channel initializing");
-//                        ch.pipeline().addLast(new ToMessageDecoder());
-//                        ch.pipeline().addLast(new LastInboundHandler());
-                        BootstrapContainer.getInstance().save(String.valueOf(port), ch);
-                    }
-                });
-
-        ChannelFuture future = server.bind(new InetSocketAddress(port));
-        future.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                if(future.isSuccess()){
-                    System.out.println("port open with : " + port);
-                }else{
-                    System.out.println("error occured.");
-                }
-            }
-        });
-
+        return future.sync();
     }
 }
