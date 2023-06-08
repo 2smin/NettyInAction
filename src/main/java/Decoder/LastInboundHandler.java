@@ -21,4 +21,9 @@ public class LastInboundHandler extends ChannelInboundHandlerAdapter {
 
         System.out.println(charset);
     }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        System.out.println(cause.getMessage());
+    }
 }
