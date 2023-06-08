@@ -1,4 +1,4 @@
-package Decoder;
+package Codec.Decoder;
 
 import BootStrap.BootstrapContainer;
 import BootStrap.BootstrapManager;
@@ -6,7 +6,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.handler.codec.TooLongFrameException;
 
 public class Client {
 
