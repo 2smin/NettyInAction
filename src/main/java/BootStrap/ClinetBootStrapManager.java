@@ -29,14 +29,14 @@ public class ClinetBootStrapManager {
 
         String localHost = InetAddress.getLocalHost().getHostAddress();
         System.out.println(localHost);
-        ChannelFuture future = client.connect(new InetSocketAddress("localhost",port));
+        ChannelFuture future = client.connect(new InetSocketAddress("localhost",port)).sync();
         future.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 if(future.isSuccess()){
                     System.out.println("connect complete");
                     ByteBuf buf = Unpooled.buffer();
-                    buf.writeBytes("hello world".getBytes());
+                    buf.writeBytes("hello world\nhihi\n".getBytes());
                     future.channel().writeAndFlush(buf);
                 }else{
                     System.out.println("connect failed");
@@ -46,6 +46,6 @@ public class ClinetBootStrapManager {
         });
 
 
-        return future.sync();
+        return future;
     }
 }
