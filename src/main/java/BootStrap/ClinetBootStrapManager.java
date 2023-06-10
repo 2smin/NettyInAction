@@ -35,9 +35,6 @@ public class ClinetBootStrapManager {
             public void operationComplete(ChannelFuture future) throws Exception {
                 if(future.isSuccess()){
                     System.out.println("connect complete");
-                    ByteBuf buf = Unpooled.buffer();
-                    buf.writeBytes("hello world\nhihi\n".getBytes());
-                    future.channel().writeAndFlush(buf);
                 }else{
                     System.out.println("connect failed");
                     future.cause().printStackTrace();

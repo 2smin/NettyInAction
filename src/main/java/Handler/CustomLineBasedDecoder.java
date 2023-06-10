@@ -21,10 +21,12 @@ public class CustomLineBasedDecoder extends LineBasedFrameDecoder {
             return null;
         }
 
-        System.out.println("readableByte : " + frame.readableBytes());
-        String readFrame = (String) frame.readCharSequence(frame.readableBytes(), Charset.defaultCharset());
-        System.out.println(readFrame);
+        ByteBuf sendFrame = frame.copy();
 
-        return readFrame;
+        System.out.println("line based decoder readableByte : " + frame.readableBytes());
+        String readFrame = (String) frame.readCharSequence(frame.readableBytes(), Charset.defaultCharset());
+        System.out.println("line based decoder  read : " + readFrame);
+
+        return sendFrame;
     }
 }
