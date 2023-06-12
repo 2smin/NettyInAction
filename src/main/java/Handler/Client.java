@@ -1,15 +1,12 @@
 package Handler;
 
-import BootStrap.ClinetBootStrapManager;
+import BootStrap.ClientBootStrapManager;
 import BootStrap.ServerBootStrapManager;
-import Codec.Decoder.LastInboundHandler;
-import io.netty.bootstrap.ServerBootstrap;
+import Codec.Decoder.ServerInboundHandler;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.handler.codec.FixedLengthFrameDecoder;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.timeout.IdleStateHandler;
 
 import java.util.concurrent.TimeUnit;
@@ -26,11 +23,12 @@ public class Client {
         server.runServerBootstrap();
         server.addPipeLine(new IdleStateHandler(0,0,30, TimeUnit.SECONDS),
                 new HeartbeatHandler(),
-                new LastInboundHandler());
+                new ServerInboundHandler());
         server.bindServerSocket(33335);
 
-        ClinetBootStrapManager client = new ClinetBootStrapManager();
-        ChannelFuture future = client.runClientBootStrap(33335);
+        ClientBootStrapManager bootstrapManager = ClientBootStrapManager.holder.INSTANCE;
+        bootstrapManager.runClientBootStrap(33335);
+        ChannelFuture clientChannelFuture = bootstrapManager.connectToServer(33335);
 
     }
 
@@ -39,11 +37,12 @@ public class Client {
 
         server.runServerBootstrap();
         server.addPipeLine(new CustomLineBasedDecoder(64*1028),
-                new LastInboundHandler());
+                new ServerInboundHandler());
         server.bindServerSocket(33335);
 
-        ClinetBootStrapManager client = new ClinetBootStrapManager();
-        ChannelFuture future = client.runClientBootStrap(33335);
+        ClientBootStrapManager bootstrapManager = ClientBootStrapManager.holder.INSTANCE;
+        bootstrapManager.runClientBootStrap(33335);
+        ChannelFuture future = bootstrapManager.connectToServer(33335);
 
         ByteBuf sendBuf = Unpooled.buffer();
         sendBuf.writeBytes("abc\ndc\nefqwfqfq\n1231f".getBytes());
@@ -55,11 +54,12 @@ public class Client {
 
         server.runServerBootstrap();
         server.addPipeLine(new FixedLengthFrameDecoder(8),
-                new LastInboundHandler());
+                new ServerInboundHandler());
         server.bindServerSocket(33335);
 
-        ClinetBootStrapManager client = new ClinetBootStrapManager();
-        ChannelFuture future = client.runClientBootStrap(33335);
+        ClientBootStrapManager bootstrapManager = ClientBootStrapManager.holder.INSTANCE;
+        bootstrapManager.runClientBootStrap(33335);
+        ChannelFuture future = bootstrapManager.connectToServer(33335);
 
         ByteBuf sendBuf = Unpooled.buffer();
         sendBuf.writeBytes("abcfefawf3e1231f".getBytes());

@@ -1,15 +1,18 @@
 package BootStrap;
 
+import Codec.Decoder.ServerInboundHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.AttributeKey;
 
 import java.net.InetSocketAddress;
 
 public class ServerBootStrapManager {
 
     ServerBootstrap server;
+    public int channelId = 0;
 
     private ServerBootStrapManager(){
     }
@@ -28,9 +31,9 @@ public class ServerBootStrapManager {
         server.childHandler(new ChannelInitializer() {
             @Override
             protected void initChannel(Channel ch) throws Exception {
-                for(ChannelHandler h : handler){
-                    ch.pipeline().addLast(h);
-                }
+                int id = channelId++;
+                ch.attr(ChannelAttr.CHANNEL_ID).set(id);
+                ch.pipeline().addLast(new ServerInboundHandler());
             }
         });
     }

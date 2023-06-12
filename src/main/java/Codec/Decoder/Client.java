@@ -1,7 +1,6 @@
 package Codec.Decoder;
 
-import BootStrap.ClinetBootStrapManager;
-import io.netty.bootstrap.ServerBootstrap;
+import BootStrap.ClientBootStrapManager;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
@@ -10,7 +9,8 @@ public class Client {
 
     public static void main(String[] args) throws Exception{
 
-        ClinetBootStrapManager bootstrapManager = new ClinetBootStrapManager();
+        ClientBootStrapManager bootstrapManager = ClientBootStrapManager.holder.INSTANCE;
+
 
 //        ServerBootstrap server = bootstrapManager.runServerBootStrap(
 //                33335, new ToMessageDecoder(), new LastInboundHandler());
@@ -20,7 +20,8 @@ public class Client {
 //        Channel serverChannel = BootstrapContainer.getInstance().get(String.valueOf(33335));
 //        serverChannel.pipeline().addLast(new ToMessageDecoder()).addLast(new LastInboundHandler());
 
-        ChannelFuture clientChannelFuture = bootstrapManager.runClientBootStrap(33335);
+        bootstrapManager.runClientBootStrap(33335);
+        ChannelFuture clientChannelFuture = bootstrapManager.connectToServer(33335);
 
 
         ByteBuf buf = Unpooled.buffer();

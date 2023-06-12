@@ -1,6 +1,6 @@
 package Codec.Decoder;
 
-import BootStrap.ClinetBootStrapManager;
+import BootStrap.ClientBootStrapManager;
 import BootStrap.ServerBootStrapManager;
 import Codec.CombinedByteStringCodec;
 import io.netty.buffer.ByteBuf;
@@ -19,8 +19,9 @@ public class Client2 {
         );
         serverBootStrapManager.bindServerSocket(33335);
 
-        ClinetBootStrapManager clientBootStrapManager = new ClinetBootStrapManager();
-        ChannelFuture clientChannelFuture = clientBootStrapManager.runClientBootStrap(33335);
+        ClientBootStrapManager bootstrapManager = ClientBootStrapManager.holder.INSTANCE;
+        bootstrapManager.runClientBootStrap(33335);
+        ChannelFuture clientChannelFuture = bootstrapManager.connectToServer(33335);
 
         ByteBuf buf = Unpooled.buffer();
         buf.writeBytes("A".getBytes());

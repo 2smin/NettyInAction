@@ -1,11 +1,10 @@
 package FileHandler;
 
-import BootStrap.ClinetBootStrapManager;
+import BootStrap.ClientBootStrapManager;
 import BootStrap.ServerBootStrapManager;
-import Codec.Decoder.LastInboundHandler;
+import Codec.Decoder.ServerInboundHandler;
 import Handler.CustomLineBasedDecoder;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.DefaultFileRegion;
@@ -20,8 +19,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.net.http.HttpRequest;
-import java.nio.channels.ScatteringByteChannel;
 
 public class Client {
 
@@ -37,11 +34,12 @@ public class Client {
         try{
             ServerBootStrapManager server = ServerBootStrapManager.ServerBootStrapManagerHolder.instance;
             server.runServerBootstrap();
-            server.addPipeLine(new CustomLineBasedDecoder(100), new LastInboundHandler());
+            server.addPipeLine(new CustomLineBasedDecoder(100), new ServerInboundHandler());
             server.bindServerSocket(33335);
 
-            ClinetBootStrapManager client = new ClinetBootStrapManager();
-            ChannelFuture channelFuture = client.runClientBootStrap(33335);
+            ClientBootStrapManager bootstrapManager = ClientBootStrapManager.holder.INSTANCE;
+            bootstrapManager.runClientBootStrap(33335);
+            ChannelFuture channelFuture = bootstrapManager.connectToServer(33335);
 
             FileInputStream in = new FileInputStream(file);
             FileRegion region = new DefaultFileRegion(in.getChannel(),0, file.length());
@@ -59,8 +57,9 @@ public class Client {
             server.addPipeLine(new TcpChunkHandler());
             server.bindServerSocket(33335);
 
-            ClinetBootStrapManager client = new ClinetBootStrapManager();
-            ChannelFuture channelFuture = client.runClientBootStrap(33335);
+            ClientBootStrapManager bootstrapManager = ClientBootStrapManager.holder.INSTANCE;
+            bootstrapManager.runClientBootStrap(33335);
+            ChannelFuture channelFuture = bootstrapManager.connectToServer(33335);
             channelFuture.channel().pipeline().addLast(new ChunkedWriteHandler());
 
             //ChunkedInput is using at httpContent????
@@ -86,8 +85,9 @@ public class Client {
                 new HttpServerCodec(), new HttpObjectAggregator(22222222),new HttpChunkInboundHandler());
         server.bindServerSocket(33335);
 
-        ClinetBootStrapManager client = new ClinetBootStrapManager();
-        ChannelFuture channelFuture = client.runClientBootStrap(33335);
+        ClientBootStrapManager bootstrapManager = ClientBootStrapManager.holder.INSTANCE;
+        bootstrapManager.runClientBootStrap(33335);
+        ChannelFuture channelFuture = bootstrapManager.connectToServer(33335);
         channelFuture.channel().pipeline().addLast(new HttpClientCodec());
         channelFuture.channel().pipeline().addLast(new HttpObjectAggregator(22222222));
         channelFuture.channel().pipeline().addLast(new ChunkedWriteHandler(4));
