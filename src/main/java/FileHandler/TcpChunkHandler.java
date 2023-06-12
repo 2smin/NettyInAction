@@ -3,15 +3,10 @@ package FileHandler;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpObject;
-import io.netty.handler.codec.http.LastHttpContent;
-import io.netty.handler.stream.ChunkedFile;
 
 import java.io.FileOutputStream;
 
-public class HttpChunkHandler extends ChannelInboundHandlerAdapter {
+public class TcpChunkHandler extends ChannelInboundHandlerAdapter {
 
     private String saveFilePath;
     private FileOutputStream fileOutputStream;
