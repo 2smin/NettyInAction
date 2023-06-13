@@ -10,7 +10,10 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
+import static BootStrap.ChannelAttr.CLIENT_PORT;
+
 public class ClientBootStrapManager {
+
 
     private Bootstrap client;
     public int channelId = 0;
@@ -20,9 +23,8 @@ public class ClientBootStrapManager {
         public static ClientBootStrapManager INSTANCE = new ClientBootStrapManager();
 
     }
-    public void runClientBootStrap(int port) throws UnknownHostException, InterruptedException {
+    public void runClientBootStrap(int clientPort) throws UnknownHostException, InterruptedException {
         client = new Bootstrap();
-        client.channel(NioSocketChannel.class);
         client.group(new NioEventLoopGroup(1)).handler(new ChannelInitializer() {
 
             @Override
@@ -33,9 +35,12 @@ public class ClientBootStrapManager {
                 ch.pipeline().addLast(new ClientInboundHandler());
             }
         });
+        client.channel(NioSocketChannel.class);
+//        client.localAddress(clientPort);
+
     }
 
-    public ChannelFuture connectToServer(int port) {
+    public ChannelFuture connectToServer(int serverPort) {
         String localHost = null;
         try {
             localHost = InetAddress.getLocalHost().getHostAddress();
@@ -46,7 +51,7 @@ public class ClientBootStrapManager {
 
         ChannelFuture future = null;
         try {
-            future = client.connect(new InetSocketAddress("localhost",port)).sync();
+            future = client.connect(new InetSocketAddress("localhost",serverPort)).sync();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -61,7 +66,6 @@ public class ClientBootStrapManager {
                 }
             }
         });
-
         return future;
     }
 }
