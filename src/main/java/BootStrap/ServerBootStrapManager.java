@@ -37,8 +37,11 @@ public class ServerBootStrapManager {
             }
         });
     }
+    public void addInitializer(ChannelInitializer channelInitializer){
+        server.handler(channelInitializer);
+    }
 
-    public void bindServerSocket(int port){
+    public ChannelFuture bindServerSocket(int port){
         ChannelFuture future = server.bind(new InetSocketAddress(port));
         future.addListener(new ChannelFutureListener() {
             @Override
@@ -50,5 +53,7 @@ public class ServerBootStrapManager {
                 }
             }
         });
+
+        return future;
     }
 }

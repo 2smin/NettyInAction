@@ -18,7 +18,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         //handler가 위치한 곳에서 index.html을 찾기 위해 경로를 설정
         URL location = HttpRequestHandler.class.getProtectionDomain().getCodeSource().getLocation();
         try {
-            String path = location.toURI() + "index.html";
+            String path = location.toURI() + "Websocket/index.html";
             path = !path.contains("file:") ? path : path.substring(5);
             INDEX = new File(path);
         }catch (Exception e){
