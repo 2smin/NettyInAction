@@ -42,17 +42,22 @@ public class ServerBootStrapManager {
     }
 
     public ChannelFuture bindServerSocket(int port){
-        ChannelFuture future = server.bind(new InetSocketAddress(port));
-        future.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                if(future.isSuccess()){
-                    System.out.println("port open with : " + port);
-                }else{
-                    System.out.println("error occured.");
+        ChannelFuture future = null;
+        try{
+            future = server.bind(new InetSocketAddress(port)).sync();
+            future.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    if(future.isSuccess()){
+                        System.out.println("port open with : " + port);
+                    }else{
+                        System.out.println("error occured.");
+                    }
                 }
-            }
-        });
+            });
+        }catch (Exception e){
+            e.printStackTrace();
+        }
 
         return future;
     }
