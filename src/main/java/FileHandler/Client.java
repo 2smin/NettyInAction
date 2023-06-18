@@ -92,7 +92,8 @@ public class Client {
             protected void initChannel(Channel ch) throws Exception {
                 ChannelPipeline pipeline = ch.pipeline();
                 pipeline.addLast(new HttpServerCodec());
-                pipeline.addLast(new HttpObjectAggregator(3000000));
+                pipeline.addLast(new HttpObjectAggregator(22222222));
+                //ChunkedWriteHandler를 사용하여 ChunkedInput의 데이터를 실제 chunk로 나누어 보낸다.
                 pipeline.addLast(new ChunkedWriteHandler());
                 pipeline.addLast(new HttpServerInboundHandler());
 
@@ -112,8 +113,9 @@ public class Client {
 
                 pipeline.addLast(new HttpClientCodec());
                 pipeline.addLast(new HttpResponseDecoder());
-                pipeline.addLast(new HttpObjectAggregator(3000000));
-                pipeline.addLast(new ChunkedWriteHandler());
+                //HttpObjectAggregator를 사용하면 httpChunk가 하나로 묶여버리므로 chunk 사용 의미가 없음
+//                pipeline.addLast(new HttpObjectAggregator(22222222));
+//                pipeline.addLast(new ChunkedWriteHandler());
                 pipeline.addLast(new ClientInboundHandler());
                 System.out.println("initialize http client");
             }

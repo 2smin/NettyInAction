@@ -17,12 +17,9 @@ public class ClientInboundHandler extends SimpleChannelInboundHandler<HttpObject
     @Override
     public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) throws Exception {
         System.out.println("ClientInboundHandler received message");
-        InetSocketAddress localAddress = (InetSocketAddress) ctx.channel().localAddress();
 
-        System.out.println("local adress : " + localAddress.getAddress() + ", local port : " +localAddress.getPort() );
-        System.out.println(msg.getClass());
-
-        if (msg instanceof HttpContent) {
+        //httpObjectAggregator를 쓰지 않아야 chunk로 받을 수 있다.
+        if (msg instanceof DefaultHttpContent) {
             System.out.println("http content");
             HttpContent content = (HttpContent) msg;
             ByteBuf buf = content.content();
@@ -33,6 +30,9 @@ public class ClientInboundHandler extends SimpleChannelInboundHandler<HttpObject
 
         }else if (msg instanceof LastHttpContent) {
             System.out.println("last http content");
+            HttpContent content = (HttpContent) msg;
+            ByteBuf buf = content.content();
+            System.out.println("readable: " + buf.readableBytes());
         }
 
 

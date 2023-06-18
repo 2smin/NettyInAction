@@ -35,7 +35,8 @@ public class HttpServerInboundHandler extends SimpleChannelInboundHandler<HttpOb
         System.out.println("file size = " + file.length());
 
         try {
-            HttpChunkedInput chunkedInput = new HttpChunkedInput(new ChunkedFile(file));
+            //chunk size 조절
+            HttpChunkedInput chunkedInput = new HttpChunkedInput(new ChunkedFile(file, 50000));
             //create httpResponse From chunkedFile
             HttpResponse httpResponse = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
             httpResponse.headers().set(HttpHeaderNames.CONTENT_TYPE, "video/mp4");
@@ -44,6 +45,9 @@ public class HttpServerInboundHandler extends SimpleChannelInboundHandler<HttpOb
 
             ctx.write(httpResponse);
             ctx.writeAndFlush(chunkedInput);
+
+            //HttpChunkedInput, ChunkedInput은 단순 data 참조를 가져다주는 역할을 한다. 실제 chunk로 나누는 작업은 ChunkedWriteHandler가 한다.
+
 
         } catch (Exception e) {
             e.printStackTrace();
