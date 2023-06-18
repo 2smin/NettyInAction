@@ -8,6 +8,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.local.LocalAddress;
 import io.netty.handler.codec.http.*;
 
+import java.io.FileOutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 
@@ -21,13 +22,15 @@ public class ClientInboundHandler extends SimpleChannelInboundHandler<HttpObject
         System.out.println("local adress : " + localAddress.getAddress() + ", local port : " +localAddress.getPort() );
         System.out.println(msg.getClass());
 
-        if(msg instanceof HttpResponse){
-            HttpResponse response = (HttpResponse) msg;
-            System.out.println("http response : " + response.toString());
-
-
-        }else if (msg instanceof HttpContent) {
+        if (msg instanceof HttpContent) {
             System.out.println("http content");
+            HttpContent content = (HttpContent) msg;
+            ByteBuf buf = content.content();
+            System.out.println("readable: " + buf.readableBytes());
+
+            FileOutputStream fileOutputStream = new FileOutputStream("src/main/java/FileHandler/save/ChunkedTestVideo.mp4");
+            fileOutputStream.getChannel().write(buf.nioBuffer());
+
         }else if (msg instanceof LastHttpContent) {
             System.out.println("last http content");
         }

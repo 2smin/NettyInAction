@@ -100,7 +100,8 @@ public class Client {
             }
         });
 
-        server.bind(33335).sync();
+        server.bind(33333).sync();
+
         Bootstrap client = new Bootstrap();
         client.group(new NioEventLoopGroup());
         client.channel(NioSocketChannel.class);
@@ -118,7 +119,7 @@ public class Client {
             }
         });
 
-        ChannelFuture channelFuture = client.connect(new InetSocketAddress(33335)).sync();
+        ChannelFuture channelFuture = client.connect(new InetSocketAddress("localhost",33333)).sync();
         channelFuture.channel().writeAndFlush(createHttpRequest());
 
     }
