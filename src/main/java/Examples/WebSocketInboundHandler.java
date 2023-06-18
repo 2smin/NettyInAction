@@ -8,7 +8,7 @@ public class WebSocketInboundHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        System.out.println("incomming websocket message : " + msg);
+        System.out.println("[" + Thread.currentThread().getName() + "] : incoming websocket message : " + msg);
 
         //send message to all clients
         MessageServer.channelGroup.writeAndFlush(msg);

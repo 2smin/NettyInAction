@@ -2,13 +2,17 @@ package FileHandler;
 
 import BootStrap.ClientBootStrapManager;
 import BootStrap.ServerBootStrapManager;
+import Codec.Decoder.ClientInboundHandler;
 import Codec.Decoder.ServerInboundHandler;
 import Handler.CustomLineBasedDecoder;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.DefaultFileRegion;
-import io.netty.channel.FileRegion;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.stream.ChunkedFile;
 import io.netty.handler.stream.ChunkedStream;
@@ -19,6 +23,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.net.InetSocketAddress;
 
 public class Client {
 
@@ -79,52 +84,50 @@ public class Client {
 
     //TODO : set chunk manually by using httpContent
     public static void httpChunkTest(File file) throws  Exception{
-        ServerBootStrapManager server = ServerBootStrapManager.ServerBootStrapManagerHolder.instance;
-        server.runServerBootstrap();
-        server.addPipeLine(
-                new HttpServerCodec(), new HttpObjectAggregator(22222222),new HttpChunkInboundHandler());
-        server.bindServerSocket(33335);
+        ServerBootstrap server = new ServerBootstrap();
+        server.group(new NioEventLoopGroup());
+        server.channel(NioServerSocketChannel.class);
+        server.childHandler(new ChannelInitializer<Channel>() {
+            @Override
+            protected void initChannel(Channel ch) throws Exception {
+                ChannelPipeline pipeline = ch.pipeline();
+                pipeline.addLast(new HttpServerCodec());
+                pipeline.addLast(new HttpObjectAggregator(3000000));
+                pipeline.addLast(new ChunkedWriteHandler());
+                pipeline.addLast(new HttpServerInboundHandler());
 
-        ClientBootStrapManager bootstrapManager = ClientBootStrapManager.holder.INSTANCE;
-        bootstrapManager.runClientBootStrap(33335);
-        ChannelFuture channelFuture = bootstrapManager.connectToServer(33335);
-        channelFuture.channel().pipeline().addLast(new HttpClientCodec());
-        channelFuture.channel().pipeline().addLast(new HttpObjectAggregator(22222222));
-        channelFuture.channel().pipeline().addLast(new ChunkedWriteHandler(4));
+                System.out.println("initialize http server");
+            }
+        });
 
-        try{
+        server.bind(33335).sync();
+        Bootstrap client = new Bootstrap();
+        client.group(new NioEventLoopGroup());
+        client.channel(NioSocketChannel.class);
+        client.handler(new ChannelInitializer<Channel>() {
+            @Override
+            protected void initChannel(Channel ch) throws Exception {
+                ChannelPipeline pipeline = ch.pipeline();
 
-            //chunk는 DefaultFullHttp를 사용 불가.
-            DefaultHttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, "/upload");
+                pipeline.addLast(new HttpClientCodec());
+                pipeline.addLast(new HttpResponseDecoder());
+                pipeline.addLast(new HttpObjectAggregator(3000000));
+                pipeline.addLast(new ChunkedWriteHandler());
+                pipeline.addLast(new ClientInboundHandler());
+                System.out.println("initialize http client");
+            }
+        });
 
-            // 청크 단위로 데이터 전송 request랑 content 따로?????
+        ChannelFuture channelFuture = client.connect(new InetSocketAddress(33335)).sync();
+        channelFuture.channel().writeAndFlush(createHttpRequest());
 
-            ChunkedFile chunkedFile = new ChunkedFile(file);
-            System.out.println("file : " + file.length());
-            System.out.println("chunkedFile : " + chunkedFile.length());
-            HttpChunkedInput httpChunkedInput = new HttpChunkedInput(chunkedFile);
+    }
 
-            request.headers().set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
-            request.headers().set(HttpHeaderNames.CONTENT_LENGTH, chunkedFile.length());
-            request.headers().set(HttpHeaderNames.CONTENT_TYPE, "video/mp4");
-            request.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
-
-            ByteBuf buf = Unpooled.copiedBuffer("HelloWorld", CharsetUtil.UTF_8);
-
-            //how to use chunkedFile
-            FileInputStream contentStream = new FileInputStream(file);
-
-            // Write the content and flush it.
-
-            //ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
-
-            channelFuture.channel().writeAndFlush(request);
-            channelFuture.channel().writeAndFlush(new HttpChunkedInput(new ChunkedStream(contentStream)));
-//            channelFuture.channel().writeAndFlush(httpChunkedInput);
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-
+    private static HttpRequest createHttpRequest(){
+        HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/getFile");
+        request.headers().set(HttpHeaderNames.HOST, "localhost");
+        request.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+        return request;
     }
 
     private static FullHttpRequest createHttpRequest(File file) throws IOException {
@@ -135,12 +138,11 @@ public class Client {
             // 청크 단위로 데이터 전송
             request.headers().set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
 
-            RandomAccessFile raf = new RandomAccessFile(file, "r");
-            ChunkedFile chunkedFile = new ChunkedFile(file);
 
-            HttpChunkedInput httpChunkedInput = new HttpChunkedInput(chunkedFile);
-            request.headers().set(HttpHeaderNames.CONTENT_LENGTH, chunkedFile.length());
+            HttpChunkedInput httpChunkedInput = new HttpChunkedInput(new ChunkedFile(file));
+            request.headers().set(HttpHeaderNames.CONTENT_LENGTH, httpChunkedInput.length());
             request.headers().set(HttpHeaderNames.CONTENT_TYPE, "video/mp4");
+
         }catch (Exception e){
             e.printStackTrace();
         }

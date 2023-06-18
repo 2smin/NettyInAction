@@ -13,7 +13,9 @@ public class HttpWebsocketRequestHandler extends SimpleChannelInboundHandler<Ful
     @Override
     public void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
 
-        System.out.println("incoming http request");
+
+
+        System.out.println("[" + Thread.currentThread().getName() + "] : incoming http request");
         HttpHeaders headers = request.headers();
 
         if(headers.contains(HttpHeaderNames.CONNECTION) && headers.contains(HttpHeaderNames.UPGRADE)){
