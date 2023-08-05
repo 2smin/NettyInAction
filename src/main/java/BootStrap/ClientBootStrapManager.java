@@ -1,6 +1,7 @@
 package BootStrap;
 
 import Codec.Decoder.ClientInboundHandler;
+import Codec.Decoder.ServerInboundHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -25,19 +26,14 @@ public class ClientBootStrapManager {
     }
     public void runClientBootStrap(int clientPort) throws UnknownHostException, InterruptedException {
         client = new Bootstrap();
-        client.group(new NioEventLoopGroup(1)).handler(new ChannelInitializer() {
-
-            @Override
-            protected void initChannel(Channel ch) throws Exception {
-                System.out.println("client channel initialized");
-                int id = channelId++;
-                ch.attr(ChannelAttr.CHANNEL_ID).set(id);
-                ch.pipeline().addLast(new ClientInboundHandler());
-            }
-        });
-        client.channel(NioSocketChannel.class);
+        client.group(new NioEventLoopGroup(1));
 //        client.localAddress(clientPort);
 
+    }
+
+    public void addPipeLine(ChannelInitializer  channelInitializer){
+        client.handler(channelInitializer);
+        client.channel(NioSocketChannel.class);
     }
 
     public ChannelFuture connectToServer(int serverPort) {
