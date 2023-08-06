@@ -11,3 +11,5 @@
 /gradle
 /.idea
 .gradle/
+/src/main/resources/ssl/
+
