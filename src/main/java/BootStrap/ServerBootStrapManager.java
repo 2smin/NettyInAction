@@ -33,12 +33,13 @@ public class ServerBootStrapManager {
             protected void initChannel(Channel ch) throws Exception {
                 int id = channelId++;
                 ch.attr(ChannelAttr.CHANNEL_ID).set(id);
-                ch.pipeline().addLast(new ServerInboundHandler());
+                ch.pipeline().addLast(handler);
             }
         });
     }
+
     public void addInitializer(ChannelInitializer channelInitializer){
-        server.handler(channelInitializer);
+        server.childHandler(channelInitializer);
     }
 
     public ChannelFuture bindServerSocket(int port){

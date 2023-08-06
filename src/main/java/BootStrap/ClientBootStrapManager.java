@@ -6,6 +6,11 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http2.DefaultHttp2DataFrame;
+import io.netty.handler.codec.http2.DefaultHttp2FrameWriter;
+import io.netty.handler.codec.http2.DefaultHttp2Headers;
+import io.netty.handler.codec.http2.Http2FrameWriter;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -60,6 +65,7 @@ public class ClientBootStrapManager {
                     System.out.println("connect failed");
                     future.cause().printStackTrace();
                 }
+
             }
         });
         return future;

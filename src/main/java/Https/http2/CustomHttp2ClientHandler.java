@@ -21,6 +21,8 @@ public class CustomHttp2ClientHandler extends ChannelDuplexHandler {
         }
     }
 
+
+
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
 
@@ -31,7 +33,6 @@ public class CustomHttp2ClientHandler extends ChannelDuplexHandler {
                 HttpHeaders headers = request.headers();
                 System.out.println("headers: " + headers);
             }
-
             super.write(ctx, msg, promise);
     }
 }

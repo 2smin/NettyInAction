@@ -15,7 +15,7 @@ public class Server {
     public static void initServer(){
         ServerBootStrapManager server = ServerBootStrapManager.ServerBootStrapManagerHolder.instance;
         server.runServerBootstrap();
-        server.addPipeLine(new Http2ServerInitializer());
+        server.addInitializer(new Http2ServerInitializer());
         server.bindServerSocket(33335);
     }
 }
