@@ -54,7 +54,7 @@ public class Http2ClientInitializer extends ChannelInitializer {
             설정된 protocol에 따라 ChannelPipeline을 재구성한다.
          */
 
-        createSslCtx();
+//        createSslCtx();
         if(sslCtx != null){
             h2Configuration(ch);
         }else{
@@ -78,17 +78,20 @@ public class Http2ClientInitializer extends ChannelInitializer {
 
         ChannelPipeline pipeline = ch.pipeline();
         pipeline.addLast(sslCtx.newHandler(ch.alloc()));
-        pipeline.addLast(new ApplicationProtocolNegotiationHandler(/*fallback protocol*/ApplicationProtocolNames.HTTP_1_1) {
+        pipeline.addLast(new ApplicationProtocolNegotiationHandler(/*fallback protocol*/ApplicationProtocolNames.HTTP_2) {
             @Override
             protected void configurePipeline(ChannelHandlerContext ctx, String protocol) throws Exception {
 
                 //HTTP/2가 선택되면 Http2FrameCodec을 ChannelPipeline에 추가한다.
                 if (ApplicationProtocolNames.HTTP_2.equals(protocol)) {
+                    System.out.println("HTTP/2 handler configured");
                     ChannelPipeline pipeline = ctx.pipeline();
                     pipeline.addLast(connectionHandler);
+                    pipeline.addLast(new CustomHttp2ClientHandler());
                     return;
                     //HTTP/1.1이 선택되면 기본 Http 핸들러만 추가한다.
                 }else if (ApplicationProtocolNames.HTTP_1_1.equals(protocol)) {
+                    System.out.println("HTTP/1.1 handler configured");
                     ChannelPipeline pipeline = ctx.pipeline();
                     pipeline.addLast(new HttpClientCodec())
                             .addLast(new HttpObjectAggregator(65536))
@@ -120,8 +123,13 @@ public class Http2ClientInitializer extends ChannelInitializer {
 
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
+
+            //ssl을 제외할 경우 여기서 upgrade Request를 날린다.
+            System.out.println("http2 init request channel active");
             DefaultFullHttpRequest upgradeRequest =
                     new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/", Unpooled.EMPTY_BUFFER);
+            upgradeRequest.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE)
+                    .set(HttpHeaderNames.UPGRADE, HttpVersion.valueOf("HTTP/2.0"));
 
             InetSocketAddress remote = (InetSocketAddress) ctx.channel().remoteAddress();
             String hostString = remote.getHostString();

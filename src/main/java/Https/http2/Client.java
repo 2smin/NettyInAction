@@ -10,6 +10,8 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http2.*;
 
+import java.nio.charset.StandardCharsets;
+
 import static io.netty.handler.codec.http2.HttpConversionUtil.ExtensionHeaderNames.STREAM_ID;
 
 public class Client {
@@ -19,12 +21,20 @@ public class Client {
             Channel channel = initClient();
 
             //테스트 request
-            FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/");
-            request.headers().add(HttpConversionUtil.ExtensionHeaderNames.STREAM_ID.text(), 3); //stream id
-            request.headers().add(HttpHeaderNames.HOST, "localhost");
-            request.headers().add("test-header","qe12g-31");
+            FullHttpRequest upgradeRequest = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/");
+            upgradeRequest.headers().set(HttpHeaderNames.HOST, "localhost");
+            upgradeRequest.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE);
+            upgradeRequest.headers().set(HttpHeaderNames.UPGRADE, "h2");
+            channel.writeAndFlush(upgradeRequest);
 
-            channel.writeAndFlush(request);
+
+            System.out.println("request sent");
+
+            Thread.sleep(3000);
+
+            //테스트 request
+            channel.writeAndFlush("hey".getBytes(StandardCharsets.UTF_8));
+
 
         }catch (Exception e){
             e.printStackTrace();

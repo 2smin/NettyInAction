@@ -6,6 +6,10 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http2.DefaultHttp2FrameWriter;
+import io.netty.handler.codec.http2.DefaultHttp2Headers;
+import io.netty.handler.codec.http2.Http2FrameWriter;
+import io.netty.handler.codec.http2.Http2Headers;
 
 public class CustomHttp2ClientHandler extends ChannelDuplexHandler {
 
@@ -19,6 +23,10 @@ public class CustomHttp2ClientHandler extends ChannelDuplexHandler {
             HttpHeaders headers = request.headers();
             System.out.println("headers: " + headers);
         }
+
+        else {
+            System.out.println("msg: " + msg);
+        }
     }
 
 
@@ -28,11 +36,13 @@ public class CustomHttp2ClientHandler extends ChannelDuplexHandler {
 
             System.out.println("CustomHttp2ClientHandler write message to Server");
 
-            if(msg instanceof FullHttpRequest) {
-                FullHttpRequest request = (FullHttpRequest) msg;
-                HttpHeaders headers = request.headers();
-                System.out.println("headers: " + headers);
-            }
-            super.write(ctx, msg, promise);
+            Http2Headers headers = new DefaultHttp2Headers().method("GET").authority("localhost").path("/hey");
+
+
+            DefaultHttp2FrameWriter frameWriter = new DefaultHttp2FrameWriter();
+            frameWriter.writeHeaders(ctx, 55, headers, 0, true, promise);
+
+            ctx.flush();
+            System.out.println("CustomHttp2ClientHandler write message to Server done");
     }
 }
