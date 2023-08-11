@@ -1,20 +1,35 @@
 package Https.http2;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
-import io.netty.handler.codec.http.DefaultHttpRequest;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.http2.DefaultHttp2DataFrame;
-import io.netty.handler.codec.http2.DefaultHttp2FrameWriter;
-import io.netty.handler.codec.http2.DefaultHttp2Headers;
-import io.netty.handler.codec.http2.Http2FrameWriter;
+import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http2.*;
 
-public class HttpRequestExecutor extends ChannelOutboundHandlerAdapter {
+import java.nio.charset.StandardCharsets;
+
+public class HttpRequestExecutor extends ChannelDuplexHandler {
 
     Http2FrameWriter frameWriter = new DefaultHttp2FrameWriter();
+
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        System.out.println("client receive response");
+
+        System.out.println("type : " + msg.getClass());
+
+        if(msg instanceof DefaultFullHttpResponse){
+            DefaultFullHttpResponse response = (DefaultFullHttpResponse)msg;
+
+            ByteBuf content = response.content();
+            System.out.println("by FullHttpResponse : " + content.readCharSequence(content.readableBytes(), StandardCharsets.UTF_8));
+        }else if (msg instanceof Http2Settings){
+            System.out.println("handshake setting received");
+        }
+
+    }
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
@@ -34,14 +49,15 @@ public class HttpRequestExecutor extends ChannelOutboundHandlerAdapter {
 //            frameWriter.writeHeaders(ctx,0,headers,1,false,null);
             ctx.writeAndFlush(headers);
             System.out.println("headers: " + headers);
+        }else if(msg instanceof DefaultHttp2HeadersFrame){
+
+            System.out.println("DefaultHttp2HeadersFrame received ");
+            ctx.writeAndFlush(msg);
+
         }else{
-            DefaultHttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/");
-            request.headers().add(HttpHeaderNames.HOST, "localhost");
-            request.headers().add("x-client-id","qe12g-31");
-
-            System.out.println("HttpRequestExecutor write default message to Server");
-            ctx.writeAndFlush(request);
-
+            System.out.println("unknown message");
+            msg.toString();
+            ctx.writeAndFlush(msg);
         }
 
 

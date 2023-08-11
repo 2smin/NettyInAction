@@ -20,20 +20,18 @@ public class Client {
         try {
             Channel channel = initClient();
 
-            //테스트 request
-            FullHttpRequest upgradeRequest = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/");
-            upgradeRequest.headers().set(HttpHeaderNames.HOST, "localhost");
-            upgradeRequest.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE);
-            upgradeRequest.headers().set(HttpHeaderNames.UPGRADE, "h2");
-            channel.writeAndFlush(upgradeRequest);
-
-
-            System.out.println("request sent");
-
+//            테스트 request
             Thread.sleep(3000);
 
+            //Http 1.x message 전송 시 HttpToHttp2ConnectionHandler 에서  http 2.0으로 변환 및 전송
+            FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/helloTmax");
+            request.headers().set("test-header","aaabbb");
+
+
+            ChannelFuture future = channel.writeAndFlush(request);
+            System.out.println("request sent");
+
             //테스트 request
-            channel.writeAndFlush("hey".getBytes(StandardCharsets.UTF_8));
 
 
         }catch (Exception e){

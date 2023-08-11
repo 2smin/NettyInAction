@@ -2,8 +2,12 @@ package Https.http2.server;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledHeapByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http2.*;
+
+import java.nio.charset.StandardCharsets;
 
 public class Http2SimpleHandler extends Http2ConnectionHandler implements Http2FrameListener {
 
@@ -14,8 +18,10 @@ public class Http2SimpleHandler extends Http2ConnectionHandler implements Http2F
 
     private void sendResponse(ChannelHandlerContext ctx, int streamId, ByteBuf payload) {
         Http2Headers headers = new DefaultHttp2Headers().status("200");
+        ByteBuf buf = Unpooled.buffer().writeBytes("RESPONSE FROM NETTY SERVER".getBytes(StandardCharsets.UTF_8));
+
         encoder().writeHeaders(ctx, streamId, headers, 0, false, ctx.newPromise());
-        encoder().writeData(ctx, streamId, payload, 0, true, ctx.newPromise());
+        encoder().writeData(ctx, streamId, buf, 0, true, ctx.newPromise());
         ctx.flush();
     }
 
@@ -23,7 +29,10 @@ public class Http2SimpleHandler extends Http2ConnectionHandler implements Http2F
     public int onDataRead(ChannelHandlerContext ctx, int streamId, ByteBuf data, int padding, boolean endOfStream) throws Http2Exception {
         int processed = data.readableBytes() + padding;
         if (endOfStream) {
+            System.out.println("onDataRead  end of stream");
             sendResponse(ctx, streamId, data.retain());
+        }else{
+            System.out.println("onDataRead not end of stream");
         }
         return processed;
     }
@@ -31,10 +40,14 @@ public class Http2SimpleHandler extends Http2ConnectionHandler implements Http2F
     @Override
     public void onHeadersRead(ChannelHandlerContext ctx, int streamId, Http2Headers headers, int padding, boolean endOfStream) throws Http2Exception {
         if (endOfStream) {
+
+            System.out.println("onHeadersRead this is end of stream");
             ByteBuf content = ctx.alloc().buffer();
             content.writeBytes("HEADER_READ FROM HTTP2 SIMPLE HANDLER".getBytes());
             ByteBufUtil.writeAscii(content, " - via HTTP/2");
             sendResponse(ctx, streamId, content);
+        }else{
+            System.out.println("onHeadersRead not end of stream");
         }
     }
 

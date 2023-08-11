@@ -38,6 +38,7 @@ public class Http2ClientInitializer extends ChannelInitializer {
         Http2Connection connection = new DefaultHttp2Connection(false);
 
         connectionHandler = new HttpToHttp2ConnectionHandlerBuilder()
+                .httpScheme(HttpScheme.HTTP)
                 .frameLogger(new Http2FrameLogger(LogLevel.INFO))
                 .connection(connection) //개별 connection 관리용 객체 설정
                 .frameListener(new DelegatingDecompressorFrameListener( //frame 압축해제, 개별 frame 타입 마다 다양한 동작 가능
@@ -141,6 +142,13 @@ public class Http2ClientInitializer extends ChannelInitializer {
 
             ctx.writeAndFlush(upgradeRequest);
             ctx.fireChannelActive();
+
+            final Http2FrameCodec http2FrameCodec = Http2FrameCodecBuilder.forClient().build();
+
+//            ctx.pipeline().addLast(http2FrameCodec);
+//            ctx.pipeline().addLast(new HttpObjectAggregator(65536));
+//            ctx.pipeline().addLast(new Http2MultiplexHandler(new HttpRequestExecutor()));
+            ctx.pipeline().addLast(new HttpRequestExecutor());
             ctx.pipeline().remove(this);
 
         }
