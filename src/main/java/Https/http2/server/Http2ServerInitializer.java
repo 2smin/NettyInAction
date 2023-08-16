@@ -17,7 +17,13 @@ public class Http2ServerInitializer extends ChannelInitializer {
             File certChainFile = new File("src/main/resources/ssl/netty.crt");
             File keyFile = new File("src/main/resources/ssl/prtKey_pkcs8.pem");
 
-            sslContext = SslContextBuilder.forServer(certChainFile, keyFile,"1234").build();
+            sslContext = SslContextBuilder.forServer(certChainFile, keyFile,"1234")
+                    .applicationProtocolConfig(new ApplicationProtocolConfig(
+                            ApplicationProtocolConfig.Protocol.ALPN,
+                            ApplicationProtocolConfig.SelectorFailureBehavior.NO_ADVERTISE,
+                            ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT,
+                            ApplicationProtocolNames.HTTP_2))
+                    .build();
 
         }catch (SSLException e){
             e.printStackTrace();
@@ -29,11 +35,11 @@ public class Http2ServerInitializer extends ChannelInitializer {
     private SslContext sslContext;
 
     public Http2ServerInitializer() {
-//        try {
-//            sslContext = getCertificate();
-//        } catch (SSLException e) {
-//            e.printStackTrace();
-//        }
+        try {
+            sslContext = getCertificate();
+        } catch (SSLException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

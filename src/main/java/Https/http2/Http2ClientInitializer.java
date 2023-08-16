@@ -26,8 +26,7 @@ public class Http2ClientInitializer extends ChannelInitializer {
                         ApplicationProtocolConfig.Protocol.ALPN,
                         ApplicationProtocolConfig.SelectorFailureBehavior.NO_ADVERTISE,
                         ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT,
-                        ApplicationProtocolNames.HTTP_2,
-                        ApplicationProtocolNames.HTTP_1_1))
+                        ApplicationProtocolNames.HTTP_2))
                 .build();
     }
 
@@ -55,7 +54,7 @@ public class Http2ClientInitializer extends ChannelInitializer {
             설정된 protocol에 따라 ChannelPipeline을 재구성한다.
          */
 
-//        createSslCtx();
+        createSslCtx();
         if(sslCtx != null){
             h2Configuration(ch);
         }else{
@@ -79,7 +78,7 @@ public class Http2ClientInitializer extends ChannelInitializer {
 
         ChannelPipeline pipeline = ch.pipeline();
         pipeline.addLast(sslCtx.newHandler(ch.alloc()));
-        pipeline.addLast(new ApplicationProtocolNegotiationHandler(/*fallback protocol*/ApplicationProtocolNames.HTTP_2) {
+        pipeline.addLast(new ApplicationProtocolNegotiationHandler(/*fallback protocol*/ApplicationProtocolNames.HTTP_1_1) {
             @Override
             protected void configurePipeline(ChannelHandlerContext ctx, String protocol) throws Exception {
 
@@ -88,7 +87,7 @@ public class Http2ClientInitializer extends ChannelInitializer {
                     System.out.println("HTTP/2 handler configured");
                     ChannelPipeline pipeline = ctx.pipeline();
                     pipeline.addLast(connectionHandler);
-                    pipeline.addLast(new CustomHttp2ClientHandler());
+                    pipeline.addLast(new HttpRequestExecutor());
                     return;
                     //HTTP/1.1이 선택되면 기본 Http 핸들러만 추가한다.
                 }else if (ApplicationProtocolNames.HTTP_1_1.equals(protocol)) {
@@ -100,6 +99,8 @@ public class Http2ClientInitializer extends ChannelInitializer {
 //                    pipeline.addLast(handler);
                     pipeline.addLast(new HttpRequestExecutor());
                     return;
+                }else{
+                    System.out.println("unknown protocol: " + protocol);
                 }
                 ctx.close();
                 throw new IllegalStateException("unknown protocol: " + protocol);
@@ -145,9 +146,6 @@ public class Http2ClientInitializer extends ChannelInitializer {
 
             final Http2FrameCodec http2FrameCodec = Http2FrameCodecBuilder.forClient().build();
 
-//            ctx.pipeline().addLast(http2FrameCodec);
-//            ctx.pipeline().addLast(new HttpObjectAggregator(65536));
-//            ctx.pipeline().addLast(new Http2MultiplexHandler(new HttpRequestExecutor()));
             ctx.pipeline().addLast(new HttpRequestExecutor());
             ctx.pipeline().remove(this);
 
