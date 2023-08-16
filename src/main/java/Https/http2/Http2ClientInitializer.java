@@ -2,7 +2,6 @@ package Https.http2;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http2.*;
 import io.netty.handler.logging.LogLevel;
@@ -42,17 +41,12 @@ public class Http2ClientInitializer extends ChannelInitializer {
                 .connection(connection) //개별 connection 관리용 객체 설정
                 .frameListener(new DelegatingDecompressorFrameListener( //frame 압축해제, 개별 frame 타입 마다 다양한 동작 가능
                         connection,
-                        //http2.0 을 다시 http1.1로 변환 application 레벨에서 쉽게 사용하도록 한다
+                        //http2.0 을 다시 http1.1로 변환, application 레벨에서 쉽게 사용하도록 한다
         new InboundHttp2ToHttpAdapterBuilder(connection)
                 .maxContentLength(100000)
                 .propagateSettings(true)
                 .build()))
                 .build();
-
-        /*
-            SslHandler의 handshake가 완료되면 ApplicationProtocolNegotiationHandler를 통해
-            설정된 protocol에 따라 ChannelPipeline을 재구성한다.
-         */
 
         createSslCtx();
         if(sslCtx != null){
@@ -64,32 +58,23 @@ public class Http2ClientInitializer extends ChannelInitializer {
 
     private void h2Configuration(Channel ch){
 
-        Http2FrameCodecBuilder http2CodecBuilder = Http2FrameCodecBuilder.forClient(); //server용 codec builder
-
-        //unstable api
-//        Http2FrameCodec http2Codec = http2CodecBuilder
-//                .frameLogger(new Http2FrameLogger(LogLevel.TRACE))
-//                .initialSettings(Http2Settings.defaultSettings())
-//                .build();
-        //builder를 통해서 ack 조절, http setting 하여 설정 가능
-
-        //multiflexing 기능하에 동작해야한다. custom hadnler를 multiflexing 핸들러에 탑재한다/
-        Http2MultiplexHandler handler = new Http2MultiplexHandler(new CustomHttp2ClientHandler());
-
         ChannelPipeline pipeline = ch.pipeline();
+        //sslhandler 추가
         pipeline.addLast(sslCtx.newHandler(ch.alloc()));
+
+        // Server에서 보낸 ALPN을 확인하고 설정하는 negotiation handler
         pipeline.addLast(new ApplicationProtocolNegotiationHandler(/*fallback protocol*/ApplicationProtocolNames.HTTP_1_1) {
             @Override
             protected void configurePipeline(ChannelHandlerContext ctx, String protocol) throws Exception {
 
-                //HTTP/2가 선택되면 Http2FrameCodec을 ChannelPipeline에 추가한다.
+                //server가 h2를 반환하면 Http2Connection handler와 기본 Http 핸들러를 ChannelPipeline에 추가한다.
                 if (ApplicationProtocolNames.HTTP_2.equals(protocol)) {
                     System.out.println("HTTP/2 handler configured");
                     ChannelPipeline pipeline = ctx.pipeline();
-                    pipeline.addLast(connectionHandler);
-                    pipeline.addLast(new HttpRequestExecutor());
+                    pipeline.addLast(connectionHandler); //connection handler는 http 2.0 frame을 사용하기 쉽게 http 1.x 객체로 변환한다.
+                    pipeline.addLast(new DefaultHttpHandler()); // 변환된 http 1.x 객체를 사용 가능
                     return;
-                    //HTTP/1.1이 선택되면 기본 Http 핸들러만 추가한다.
+                //server가 h2를 반환하지 않으면 http1.x를 사용하게 되며, 기본 Http 핸들러와 server 코덱을 추가한다.
                 }else if (ApplicationProtocolNames.HTTP_1_1.equals(protocol)) {
                     System.out.println("HTTP/1.1 handler configured");
                     ChannelPipeline pipeline = ctx.pipeline();
@@ -97,7 +82,7 @@ public class Http2ClientInitializer extends ChannelInitializer {
                             .addLast(new HttpObjectAggregator(65536))
                             .addLast(new HttpContentDecompressor());
 //                    pipeline.addLast(handler);
-                    pipeline.addLast(new HttpRequestExecutor());
+                    pipeline.addLast(new DefaultHttpHandler());
                     return;
                 }else{
                     System.out.println("unknown protocol: " + protocol);
@@ -112,11 +97,25 @@ public class Http2ClientInitializer extends ChannelInitializer {
     private void h2cConfiguration(Channel ch){
         ChannelPipeline pipeline = ch.pipeline();
 
+        //h2c는 ALPN이 없으므로 직접 upgrade handler를 설정해준다.
         HttpClientCodec sourceCodec = new HttpClientCodec();
-        Http2ClientUpgradeCodec upgradeCodec = new Http2ClientUpgradeCodec(connectionHandler);
-        HttpClientUpgradeHandler upgradeHandler = new HttpClientUpgradeHandler(sourceCodec, upgradeCodec, 65536);
 
-        pipeline.addLast(sourceCodec, upgradeHandler, new Http2InitializeRequestHandler());
+        //Http 2로 upgrade 하는 codec
+        Http2ClientUpgradeCodec upgradeCodec = new Http2ClientUpgradeCodec(connectionHandler);
+
+        /*
+            http를 upgrade 하는 handler, http 를 upgrade하도록 하며,
+            param으로 주어진 upgradeCodec을 보고 어떤 protocol로 upgrade할지 header를 넣는다.
+            upgrade가 가능하면 sourceCodec을 pipeline에서 지우고 upgradeCodec이 가진 connection handler를 pipeline에 추가한다.
+         */
+        HttpClientUpgradeHandler upgradeHandler = new HttpClientUpgradeHandler(
+                /* pipeline에 setting할 동일 srcCodec 객체를 넣어야 함 */ sourceCodec,
+                upgradeCodec, 65536);
+
+        pipeline.addLast(
+                /*최초 요청에 대해 처리하는 httpCodec */ sourceCodec,
+                /* upgrade 헤더 추가 및 upgrade를 수행하는 handler */ upgradeHandler,
+                /* 최초 요청을 보낼 handler */ new Http2InitializeRequestHandler());
 
     }
 
@@ -130,8 +129,10 @@ public class Http2ClientInitializer extends ChannelInitializer {
             System.out.println("http2 init request channel active");
             DefaultFullHttpRequest upgradeRequest =
                     new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/", Unpooled.EMPTY_BUFFER);
-            upgradeRequest.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE)
-                    .set(HttpHeaderNames.UPGRADE, HttpVersion.valueOf("HTTP/2.0"));
+
+            //upgrade handler에서 최초 request에 대해서 upgrade header를 자동으로 달아준다.
+//            upgradeRequest.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE)
+//                    .set(HttpHeaderNames.UPGRADE, HttpVersion.valueOf("HTTP/2.0"));
 
             InetSocketAddress remote = (InetSocketAddress) ctx.channel().remoteAddress();
             String hostString = remote.getHostString();
@@ -142,11 +143,8 @@ public class Http2ClientInitializer extends ChannelInitializer {
             upgradeRequest.headers().set(HttpHeaderNames.HOST, hostString + ':' + remote.getPort());
 
             ctx.writeAndFlush(upgradeRequest);
-            ctx.fireChannelActive();
 
-            final Http2FrameCodec http2FrameCodec = Http2FrameCodecBuilder.forClient().build();
-
-            ctx.pipeline().addLast(new HttpRequestExecutor());
+            ctx.pipeline().addLast(new DefaultHttpHandler());
             ctx.pipeline().remove(this);
 
         }

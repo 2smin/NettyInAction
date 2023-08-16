@@ -6,12 +6,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http2.*;
 
 import java.nio.charset.StandardCharsets;
 
-public class HttpRequestExecutor extends ChannelDuplexHandler {
+public class DefaultHttpHandler extends ChannelDuplexHandler {
 
     Http2FrameWriter frameWriter = new DefaultHttp2FrameWriter();
 

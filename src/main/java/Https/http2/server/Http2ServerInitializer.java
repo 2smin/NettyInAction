@@ -28,18 +28,17 @@ public class Http2ServerInitializer extends ChannelInitializer {
         }catch (SSLException e){
             e.printStackTrace();
         }
-
         return sslContext;
     }
 
     private SslContext sslContext;
 
     public Http2ServerInitializer() {
-        try {
-            sslContext = getCertificate();
-        } catch (SSLException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            sslContext = getCertificate();
+//        } catch (SSLException e) {
+//            e.printStackTrace();
+//        }
     }
 
     @Override
