@@ -21,6 +21,7 @@ public class Http2ClientInitializer extends ChannelInitializer {
     private void createSslCtx() throws SSLException {
         sslCtx = SslContextBuilder.forClient().sslProvider(provider)
                 .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                .protocols(SslProtocols.TLS_v1_3)
                 .applicationProtocolConfig(new ApplicationProtocolConfig(
                         ApplicationProtocolConfig.Protocol.ALPN,
                         ApplicationProtocolConfig.SelectorFailureBehavior.NO_ADVERTISE,

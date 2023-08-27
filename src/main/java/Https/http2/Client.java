@@ -2,6 +2,8 @@ package Https.http2;
 
 import BootStrap.ClientBootStrapManager;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
@@ -26,6 +28,11 @@ public class Client {
             //Http 1.x message 전송 시 HttpToHttp2ConnectionHandler 에서  http 2.0으로 변환 및 전송
             FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/helloTmax");
             request.headers().set("test-header","aaabbb");
+            ByteBuf buf = Unpooled.buffer();
+
+            for(int i=0; i <30000; i++){
+                request.content().writeBytes("A".getBytes());
+            }
 
 
             ChannelFuture future = channel.writeAndFlush(request);

@@ -18,10 +18,10 @@ public class Http2SimpleHandler extends Http2ConnectionHandler implements Http2F
 
     private void sendResponse(ChannelHandlerContext ctx, int streamId, ByteBuf payload) {
         Http2Headers headers = new DefaultHttp2Headers().status("200");
-        ByteBuf buf = Unpooled.buffer().writeBytes("RESPONSE FROM NETTY SERVER".getBytes(StandardCharsets.UTF_8));
+        payload.writeBytes("RESPONSE FROM NETTY SERVER".getBytes(StandardCharsets.UTF_8));
 
         encoder().writeHeaders(ctx, streamId, headers, 0, false, ctx.newPromise());
-        encoder().writeData(ctx, streamId, buf, 0, true, ctx.newPromise());
+        encoder().writeData(ctx, streamId, payload, 0, true, ctx.newPromise());
         ctx.flush();
     }
 
@@ -34,6 +34,8 @@ public class Http2SimpleHandler extends Http2ConnectionHandler implements Http2F
         }else{
             System.out.println("onDataRead not end of stream");
         }
+
+
         return processed;
     }
 
