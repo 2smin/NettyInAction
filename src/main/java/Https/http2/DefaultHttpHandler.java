@@ -4,27 +4,41 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http2.*;
 
+import java.io.InvalidClassException;
 import java.nio.charset.StandardCharsets;
 
 public class DefaultHttpHandler extends ChannelDuplexHandler {
 
-    Http2FrameWriter frameWriter = new DefaultHttp2FrameWriter();
+    private HttpMessageMappingContainer mappingContainer = new HttpMessageMappingContainer();
+    private int streamId = 6;
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        System.out.println("client receive response");
-
-        System.out.println("type : " + msg.getClass());
-
+        System.out.println("HttpResponse received");
         if(msg instanceof DefaultFullHttpResponse){
-            DefaultFullHttpResponse response = (DefaultFullHttpResponse)msg;
+            DefaultFullHttpResponse httpResponse = (DefaultFullHttpResponse)msg;
 
-            ByteBuf content = response.content();
-            System.out.println("by FullHttpResponse : " + content.readCharSequence(content.readableBytes(), StandardCharsets.UTF_8));
+
+            System.out.println("response content : " + httpResponse.content().toString(StandardCharsets.UTF_8));
+
+            String streamId = null;
+
+            //extract streamId from respons header
+            if(!httpResponse.headers().contains(HttpConversionUtil.ExtensionHeaderNames.STREAM_ID.text())){
+                streamId = streamId();
+            }else{
+                streamId = httpResponse.headers().get(HttpConversionUtil.ExtensionHeaderNames.STREAM_ID.text());
+                if(streamId == null) streamId = streamId();
+            }
+
+            System.out.println("response streamId : " + streamId);
+            String host = mappingContainer.checkIfExist(streamId);
+
+            //TODO : host channel 찾아서 writeAndFlush (global static channel map)
+
         }else if (msg instanceof Http2Settings){
             System.out.println("handshake setting received");
         }
@@ -33,30 +47,29 @@ public class DefaultHttpHandler extends ChannelDuplexHandler {
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        if(!(msg instanceof DefaultHttpRequest)) throw new InvalidClassException("msg is not FullHttpRequest");
+        DefaultHttpRequest httpRequest = (DefaultHttpRequest) msg;
 
+        String streamId = null;
 
-        if(msg instanceof DefaultHttp2DataFrame){
-            System.out.println("HttpRequestExecutor write http2 frame message to Server");
-            DefaultHttp2DataFrame dataFrame = (DefaultHttp2DataFrame) msg;
-            frameWriter.writeData(ctx,0,dataFrame.content(),1,true, null);
-            System.out.println("dataFrame: " + dataFrame);
+        //check if streamId is already exist (if user set streamId), or create new streamId
+        if(!httpRequest.headers().contains(HttpConversionUtil.ExtensionHeaderNames.STREAM_ID.text())){
+            streamId = streamId();
+        }else{
+            streamId = httpRequest.headers().get(HttpConversionUtil.ExtensionHeaderNames.STREAM_ID.text());
+            if(streamId == null) streamId = streamId();
         }
 
+        System.out.println("request streamId : " + streamId);
+        mappingContainer.add(streamId, httpRequest.headers().get(HttpHeaderNames.HOST));
 
-        if(msg instanceof DefaultHttp2Headers){
-            System.out.println("HttpRequestExecutor write http2 header message to Server");
-            DefaultHttp2Headers headers = (DefaultHttp2Headers) msg;
-            ctx.writeAndFlush(headers);
-            System.out.println("headers: " + headers);
-        }else if(msg instanceof DefaultHttp2HeadersFrame){
-            System.out.println("DefaultHttp2HeadersFrame received ");
-            ctx.writeAndFlush(msg);
+        //TODO : host channel 찾아서 writeAndFlush (global static channel map)
 
-        }else if(msg instanceof FullHttpRequest){
-            System.out.println("FullHttpRequest received ");
-            ctx.writeAndFlush(msg);
-        }
+        ctx.write(httpRequest);
+    }
 
-
+    private String streamId(){
+        System.out.println("increase streamId : " + streamId);
+        return String.valueOf(streamId++);
     }
 }

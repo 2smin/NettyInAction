@@ -29,10 +29,10 @@ public class Http2SimpleHandler extends Http2ConnectionHandler implements Http2F
     public int onDataRead(ChannelHandlerContext ctx, int streamId, ByteBuf data, int padding, boolean endOfStream) throws Http2Exception {
         int processed = data.readableBytes() + padding;
         if (endOfStream) {
-            System.out.println("onDataRead  end of stream");
+            System.out.println("onDataRead  end of stream, streamId: " + streamId);
             sendResponse(ctx, streamId, data.retain());
         }else{
-            System.out.println("onDataRead not end of stream");
+            System.out.println("onDataRead not end of stream, streamId: " + streamId);
         }
 
 
@@ -43,13 +43,13 @@ public class Http2SimpleHandler extends Http2ConnectionHandler implements Http2F
     public void onHeadersRead(ChannelHandlerContext ctx, int streamId, Http2Headers headers, int padding, boolean endOfStream) throws Http2Exception {
         if (endOfStream) {
 
-            System.out.println("onHeadersRead this is end of stream");
+            System.out.println("onHeadersRead this is end of stream, streamId: " + streamId);
             ByteBuf content = ctx.alloc().buffer();
             content.writeBytes("HEADER_READ FROM HTTP2 SIMPLE HANDLER".getBytes());
             ByteBufUtil.writeAscii(content, " - via HTTP/2");
             sendResponse(ctx, streamId, content);
         }else{
-            System.out.println("onHeadersRead not end of stream");
+            System.out.println("onHeadersRead not end of stream, streamId: " + streamId);
         }
     }
 

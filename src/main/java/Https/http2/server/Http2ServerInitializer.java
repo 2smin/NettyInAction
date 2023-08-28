@@ -46,9 +46,20 @@ public class Http2ServerInitializer extends ChannelInitializer {
     @Override
     protected void initChannel(Channel ch) throws Exception {
 
+        Http2Connection connection = new DefaultHttp2Connection(true);
+        Http2ConnectionHandler connectionHandler = new HttpToHttp2ConnectionHandlerBuilder()
+                .httpScheme(HttpScheme.HTTP)
+                .frameLogger(new Http2FrameLogger(LogLevel.INFO))
+                .connection(connection) //개별 connection 관리용 객체 설정
+                .frameListener(new DelegatingDecompressorFrameListener( //frame 압축해제, 개별 frame 타입 마다 다양한 동작 가능
+                        connection,
+                        //http2.0 을 다시 http1.1로 변환, application 레벨에서 쉽게 사용하도록 한다
+                        new Http2SimpleHandlerBuilder().build()))
+                .build();
+
         if(sslContext != null){
             System.out.println("SslContext has been set");
-            ch.pipeline().addLast(sslContext.newHandler(ch.alloc()), new HttpServerUpgradeNegotiator(ApplicationProtocolNames.HTTP_2));
+            ch.pipeline().addLast(sslContext.newHandler(ch.alloc()), new HttpServerUpgradeNegotiator(ApplicationProtocolNames.HTTP_2, connectionHandler));
         }else{
             System.out.println("SslContext has not been set");
             ChannelPipeline p = ch.pipeline();
@@ -68,19 +79,6 @@ public class Http2ServerInitializer extends ChannelInitializer {
                 }}
             );
 
-            Http2Connection connection = new DefaultHttp2Connection(true);
-            Http2ConnectionHandler connectionHandler = new HttpToHttp2ConnectionHandlerBuilder()
-                    .httpScheme(HttpScheme.HTTP)
-                    .frameLogger(new Http2FrameLogger(LogLevel.INFO))
-                    .connection(connection) //개별 connection 관리용 객체 설정
-                    .frameListener(new DelegatingDecompressorFrameListener( //frame 압축해제, 개별 frame 타입 마다 다양한 동작 가능
-                            connection,
-                            //http2.0 을 다시 http1.1로 변환, application 레벨에서 쉽게 사용하도록 한다
-                            new InboundHttp2ToHttpAdapterBuilder(connection)
-                                    .maxContentLength(100000)
-                                    .propagateSettings(true)
-                                    .build()))
-                    .build();
 
 
 
@@ -89,7 +87,7 @@ public class Http2ServerInitializer extends ChannelInitializer {
 
             //connection handler 사용할지, 자체 frame listener 사용할지 결정
             p.addLast(h2cUpgradeHandler);
-            p.addLast(connectionHandler);
+//            p.addLast(connectionHandler);
 
             //Http 2 Frame으로 오는 경우는 h2cUpgradeHandler에서 처리하고, upgrade 실패인 경우 아래의 핸들러에서 HttpMessage 로 read되어 Http1SimpleHandler에서 처리한다.
             p.addLast(new SimpleChannelInboundHandler<HttpMessage>() {
