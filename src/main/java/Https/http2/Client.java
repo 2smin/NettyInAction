@@ -13,6 +13,7 @@ import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http2.*;
 
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 import static io.netty.handler.codec.http2.HttpConversionUtil.ExtensionHeaderNames.STREAM_ID;
 
@@ -28,18 +29,10 @@ public class Client {
             //Http 1.x message 전송 시 HttpToHttp2ConnectionHandler 에서  http 2.0으로 변환 및 전송
             FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/helloTmax");
             request.headers().set("test-header","aaabbb");
-//            ByteBuf buf = Unpooled.buffer();
-//
-//            for(int i=0; i <30000; i++){
-//                request.content().writeBytes("A".getBytes());
-//            }
-
+            request.headers().set(HttpHeaderNames.HOST, UUID.randomUUID().toString().substring(0,6));
 
             ChannelFuture future = channel.writeAndFlush(request);
-            System.out.println("request sent");
-
-            //테스트 request
-
+            System.out.println("send test httpRequest to server");
 
         }catch (Exception e){
             e.printStackTrace();
