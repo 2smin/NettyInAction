@@ -54,7 +54,10 @@ public class Http2ServerInitializer extends ChannelInitializer {
                 .frameListener(new DelegatingDecompressorFrameListener( //frame 압축해제, 개별 frame 타입 마다 다양한 동작 가능
                         connection,
                         //http2.0 을 다시 http1.1로 변환, application 레벨에서 쉽게 사용하도록 한다
-                        new Http2SimpleHandlerBuilder().build()))
+                        new InboundHttp2ToHttpAdapterBuilder(connection)
+                                .maxContentLength(100000)
+                                .propagateSettings(true)
+                                .build()))
                 .build();
 
         if(sslContext != null){
@@ -83,11 +86,9 @@ public class Http2ServerInitializer extends ChannelInitializer {
 
 
             CleartextHttp2ServerUpgradeHandler h2cUpgradeHandler
-                    = new CleartextHttp2ServerUpgradeHandler(sourceCodec, upgradeHandler, new Http2SimpleHandlerBuilder().build());
+                    = new CleartextHttp2ServerUpgradeHandler(sourceCodec, upgradeHandler, connectionHandler);
 
-            //connection handler 사용할지, 자체 frame listener 사용할지 결정
             p.addLast(h2cUpgradeHandler);
-//            p.addLast(connectionHandler);
 
             //Http 2 Frame으로 오는 경우는 h2cUpgradeHandler에서 처리하고, upgrade 실패인 경우 아래의 핸들러에서 HttpMessage 로 read되어 Http1SimpleHandler에서 처리한다.
             p.addLast(new SimpleChannelInboundHandler<HttpMessage>() {

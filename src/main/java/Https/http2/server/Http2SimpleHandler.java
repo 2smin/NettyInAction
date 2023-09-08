@@ -25,6 +25,7 @@ public class Http2SimpleHandler extends Http2ConnectionHandler implements Http2F
         ctx.flush();
     }
 
+
     @Override
     public int onDataRead(ChannelHandlerContext ctx, int streamId, ByteBuf data, int padding, boolean endOfStream) throws Http2Exception {
         int processed = data.readableBytes() + padding;

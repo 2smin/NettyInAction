@@ -30,6 +30,7 @@ public class Client {
             FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/helloTmax");
             request.headers().set("test-header","aaabbb");
             request.headers().set(HttpHeaderNames.HOST, UUID.randomUUID().toString().substring(0,6));
+            request.content().writeBytes("hello world from client".getBytes(StandardCharsets.UTF_8));
 
             ChannelFuture future = channel.writeAndFlush(request);
             System.out.println("send test httpRequest to server");

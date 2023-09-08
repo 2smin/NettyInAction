@@ -27,8 +27,10 @@ public class HttpServerUpgradeNegotiator extends ApplicationProtocolNegotiationH
         if (ApplicationProtocolNames.HTTP_2.equals(protocol)) {
             System.out.println("Server Configured to HTTP/2");
 
-            //FIXME : connectionHandler 설정 시 response 반환 불가 issue 발생
-            ctx.pipeline().addLast(new Http2SimpleHandlerBuilder().build());
+            //htt2 connection handler (http2 -> http1)
+            ctx.pipeline().addLast(http2ConnectionHandler);
+            //http1 handler (application level에서 http1 객체를 다룰수 있도록)
+            ctx.pipeline().addLast(new Http1SimpleHandler());
             return;
         }else if (ApplicationProtocolNames.HTTP_1_1.equals(protocol)) {
             System.out.println("Server Configured to HTTP/1.1");
