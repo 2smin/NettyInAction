@@ -1,0 +1,15 @@
+syntax = "proto3";
+package com.google.grpc.proto.generated;
+
+option java_package = "com.google.grpc.proto.generated";
+
+message Person {
+  int32 id = 1;
+  string name = 2;
+  int32 age = 3;
+  optional string email = 4;
+}
+
+message Persons {
+  repeated Person person = 1;
+}
